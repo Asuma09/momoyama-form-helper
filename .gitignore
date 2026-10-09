@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# 実際の部員名簿（個人情報）は絶対にコミットしない
+*.xlsx
+*.xls
+!sample/部員名簿サンプル.xlsx
+
+.DS_Store

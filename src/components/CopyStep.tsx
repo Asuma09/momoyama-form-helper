@@ -4,6 +4,7 @@ import type { CopyItem } from '../lib/roster';
 type Props = {
   items: CopyItem[];
   onBack: () => void;
+  onNext: () => void;
 };
 
 async function writeToClipboard(text: string): Promise<boolean> {
@@ -25,7 +26,7 @@ async function writeToClipboard(text: string): Promise<boolean> {
   }
 }
 
-export default function CopyStep({ items, onBack }: Props) {
+export default function CopyStep({ items, onBack, onNext }: Props) {
   const [copied, setCopied] = useState<Record<string, boolean>>({});
   const [failed, setFailed] = useState<string | null>(null);
 
@@ -97,6 +98,9 @@ export default function CopyStep({ items, onBack }: Props) {
       <div className="actions">
         <button type="button" className="secondary" onClick={onBack}>
           企画情報の入力に戻る
+        </button>
+        <button type="button" className="primary" onClick={onNext}>
+          シフト表の書き出しへ
         </button>
       </div>
     </section>

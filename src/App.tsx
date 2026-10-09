@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { WorkBook } from 'xlsx';
+import type { WorkBook } from 'xlsx-js-style';
 import LoadStep from './components/LoadStep';
 import ConfirmStep from './components/ConfirmStep';
 import PlanStep from './components/PlanStep';
 import CopyStep from './components/CopyStep';
+import ShiftStep from './components/ShiftStep';
 import { EMPTY_PLAN, buildPlanCopyItems, type PlanInput } from './lib/plan';
+import { DEFAULT_SHIFT_SETTINGS, shuffle, type ShiftSettings } from './lib/shift';
 import {
   DEFAULT_ROLE_SETTINGS,
   OFFICER_SLOT_LABELS,
@@ -16,13 +18,14 @@ import {
   type RoleSettings,
 } from './lib/roster';
 
-type Step = 'load' | 'confirm' | 'plan' | 'copy';
+type Step = 'load' | 'confirm' | 'plan' | 'copy' | 'shift';
 
 const STEP_LABELS: Record<Step, string> = {
   load: '読み込み',
   confirm: '確認',
   plan: '企画情報の入力',
   copy: 'コピペ一覧',
+  shift: 'シフト表',
 };
 
 const EMPTY_SLOTS: (string | null)[] = OFFICER_SLOT_LABELS.map(() => null);
@@ -38,6 +41,8 @@ export default function App() {
   const [leaderId, setLeaderId] = useState<string | null>(null);
   const [officerIds, setOfficerIds] = useState<(string | null)[]>(EMPTY_SLOTS);
   const [plan, setPlan] = useState<PlanInput>(EMPTY_PLAN);
+  const [shiftSettings, setShiftSettings] = useState<ShiftSettings>(DEFAULT_SHIFT_SETTINGS);
+  const [orderIds, setOrderIds] = useState<string[]>([]);
 
   const parsed = useMemo(() => {
     if (!workbook || !selectedSheet) return null;
@@ -65,6 +70,10 @@ export default function App() {
     );
   }, [assignment]);
 
+  useEffect(() => {
+    setOrderIds(roster ? roster.members.map((member) => member.id) : []);
+  }, [roster]);
+
   const memberById = useMemo(() => {
     const map = new Map<string, NonNullable<typeof roster>['members'][number]>();
     roster?.members.forEach((member) => map.set(member.id, member));
@@ -73,6 +82,10 @@ export default function App() {
 
   const leader = leaderId ? memberById.get(leaderId) ?? null : null;
   const officers = officerIds.map((id) => (id ? memberById.get(id) ?? null : null));
+  const shiftOrder = orderIds.flatMap((id) => {
+    const member = memberById.get(id);
+    return member ? [member] : [];
+  });
 
   const warnings = useMemo(() => {
     if (!assignment || !roster) return [];
@@ -224,7 +237,22 @@ export default function App() {
         )}
 
         {step === 'copy' && roster && (
-          <CopyStep items={copyItems} onBack={() => setStep('plan')} />
+          <CopyStep
+            items={copyItems}
+            onBack={() => setStep('plan')}
+            onNext={() => setStep('shift')}
+          />
+        )}
+
+        {step === 'shift' && roster && (
+          <ShiftStep
+            order={shiftOrder}
+            settings={shiftSettings}
+            onSettingsChange={setShiftSettings}
+            onShuffle={() => setOrderIds((prev) => shuffle(prev))}
+            onResetOrder={() => setOrderIds(roster.members.map((member) => member.id))}
+            onBack={() => setStep('copy')}
+          />
         )}
       </main>
 

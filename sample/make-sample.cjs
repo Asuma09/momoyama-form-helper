@@ -1,5 +1,5 @@
 // サンプル名簿（架空データ）を作り直すスクリプト: node sample/make-sample.cjs
-const XLSX = require('xlsx');
+const XLSX = require('xlsx-js-style');
 
 const wb = XLSX.utils.book_new();
 

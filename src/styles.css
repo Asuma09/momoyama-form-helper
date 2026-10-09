@@ -444,6 +444,66 @@ button.secondary {
   color: #3c7a46;
 }
 
+.preset-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.preset-row button {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.checkbox.small {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.shift-table td {
+  vertical-align: top;
+  min-width: 150px;
+}
+
+.shift-entry {
+  font-size: 13px;
+}
+
+.shift-entry + .shift-entry {
+  margin-top: 6px;
+}
+
+.shift-duty {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.shift-example {
+  background: #faf8f5;
+  color: var(--muted);
+}
+
+.shift-closed {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 6px,
+    var(--line) 6px,
+    var(--line) 7px
+  );
+}
+
 .app-footer {
   margin-top: 28px;
   color: var(--muted);

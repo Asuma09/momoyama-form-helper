@@ -32,7 +32,7 @@ export type PhoneResult = {
   warning?: string;
 };
 
-/** 携帯番号：数字以外を除いて 3-4-4 桁のハイフンありにする */
+/** 電話番号：数字以外を除いて 3-4-4 桁のハイフンありにする */
 export function normalizePhone(value: unknown): PhoneResult {
   const original = trimAll(value);
   let digits = original.normalize('NFKC').replace(/\D/g, '');
@@ -49,8 +49,8 @@ export function normalizePhone(value: unknown): PhoneResult {
   return {
     value: original,
     warning: original
-      ? `携帯番号が11桁になりません（数字${digits.length}桁）`
-      : '携帯番号が空欄です',
+      ? `電話番号が11桁になりません（数字${digits.length}桁）`
+      : '電話番号が空欄です',
   };
 }
 

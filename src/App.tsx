@@ -12,6 +12,7 @@ import {
   OFFICER_SLOT_LABELS,
   assignByRole,
   buildCopyItems,
+  fillOfficerSlots,
   findRosterSheet,
   parseSheet,
   readWorkbook,
@@ -65,9 +66,7 @@ export default function App() {
     const autoLeader =
       assignment.leaderCandidates.length === 1 ? assignment.leaderCandidates[0].id : null;
     setLeaderId(autoLeader);
-    setOfficerIds(
-      OFFICER_SLOT_LABELS.map((_, index) => assignment.officerPool[index]?.id ?? null),
-    );
+    setOfficerIds(fillOfficerSlots(assignment, autoLeader));
   }, [assignment]);
 
   useEffect(() => {
@@ -101,14 +100,29 @@ export default function App() {
       );
     }
     const officerCount = assignment.officerPool.length;
-    if (officerCount < 2) {
-      list.push(`幹部が${officerCount}人しかいません。幹部①②は必須です。`);
-    } else if (officerCount >= 5) {
-      list.push(`幹部が${officerCount}人います。上位4人を①〜④に入れました。`);
+    // 代表者が幹部役職・一般部員から選ばれる場合は1人減る
+    const fillable =
+      assignment.officerPool.length +
+      assignment.generalMembers.length -
+      (leaderCount === 0 ? 1 : 0);
+    if (officerCount >= 5) {
+      list.push(`幹部の役職の人が${officerCount}人います。上位4人を①〜④に入れました。`);
+    } else if (officerCount < OFFICER_SLOT_LABELS.length) {
+      list.push(
+        `幹部の役職の人が${officerCount}人なので、残りの枠は名簿の上から入れました。選び直せます。`,
+      );
+    }
+    if (fillable < 2) {
+      list.push('①②に入れられる人が2人に足りません。幹部①②は必須です。');
+    }
+    if (roster.missingOptionalColumns.includes('フリガナ')) {
+      list.push(
+        'フリガナの列が見つかりませんでした。フリガナの項目は空欄になるので、フォームで直接入力してください。',
+      );
     }
     const phoneIssues = roster.members.filter((member) => member.phoneWarning).length;
     if (phoneIssues > 0) {
-      list.push(`携帯番号を整形できなかった人が${phoneIssues}人います。元の値のまま表示します。`);
+      list.push(`電話番号を整形できなかった人が${phoneIssues}人います。元の値のまま表示します。`);
     }
     return list;
   }, [assignment, roster, settings.leaderRole]);

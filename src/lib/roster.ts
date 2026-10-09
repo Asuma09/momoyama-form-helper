@@ -10,7 +10,7 @@ import {
 
 export type ColumnKey = 'role' | 'name' | 'kana' | 'studentId' | 'phone';
 
-type ColumnDef = { key: ColumnKey; label: string; aliases: string[] };
+type ColumnDef = { key: ColumnKey; label: string; aliases: string[]; optional?: boolean };
 
 const COLUMN_DEFS: ColumnDef[] = [
   { key: 'role', label: '役職', aliases: ['役職', '役職名', '役'] },
@@ -19,14 +19,27 @@ const COLUMN_DEFS: ColumnDef[] = [
     key: 'kana',
     label: 'フリガナ',
     aliases: ['フリガナ', 'ふりがな', 'カナ', 'かな', '氏名フリガナ', '氏名カナ', '読み'],
+    optional: true,
   },
   { key: 'studentId', label: '学籍番号', aliases: ['学籍番号', '学生番号', '学番'] },
   {
     key: 'phone',
-    label: '携帯番号',
-    aliases: ['携帯番号', '携帯電話', '携帯電話番号', '携帯', '電話番号', 'tel'],
+    label: '電話番号／連絡先',
+    aliases: [
+      '電話番号',
+      '連絡先',
+      '連絡先電話番号',
+      '携帯番号',
+      '携帯電話',
+      '携帯電話番号',
+      '携帯',
+      '電話',
+      'tel',
+    ],
   },
 ];
+
+const REQUIRED_COLUMN_DEFS = COLUMN_DEFS.filter((def) => !def.optional);
 
 /**
  * 見出し行を探す範囲（上から何行まで見るか）。
@@ -54,6 +67,8 @@ export type ParseSuccess = {
   sheetName: string;
   headerExcelRow: number;
   columns: { key: ColumnKey; label: string; header: string; columnLetter: string }[];
+  /** 見つからなかった任意列（フリガナなど）の列名 */
+  missingOptionalColumns: string[];
   members: Member[];
   skippedRows: number;
 };
@@ -121,14 +136,14 @@ function matchColumns(headerCells: string[]): Partial<Record<ColumnKey, number>>
 
 /**
  * 見出し行を探す。
- * requireAll が true なら5列すべて揃う行だけを見出しとみなす（入部届など似た表を避けるため）。
+ * requireAll が true なら必要な列がすべて揃う行だけを見出しとみなす（入部届など似た表を避けるため）。
  * false なら「氏名」と「学籍番号」の両方がある行を見出しとみなす（不足列を知らせるため）。
  */
 function findHeaderRow(rows: string[][], requireAll: boolean): number {
   for (let i = 0; i < Math.min(rows.length, HEADER_SEARCH_ROWS); i += 1) {
     const matched = matchColumns(rows[i] ?? []);
     const ok = requireAll
-      ? COLUMN_DEFS.every((def) => matched[def.key] !== undefined)
+      ? REQUIRED_COLUMN_DEFS.every((def) => matched[def.key] !== undefined)
       : matched.name !== undefined && matched.studentId !== undefined;
     if (ok) return i;
   }
@@ -163,15 +178,17 @@ export function parseSheet(workbook: XLSX.WorkBook, sheetName: string): ParseRes
   }
 
   const headerCells = rows[headerIndex] ?? [];
-  const columnIndex = {} as Record<ColumnKey, number>;
+  const columnIndex: Partial<Record<ColumnKey, number>> = {};
   const columns: ParseSuccess['columns'] = [];
   const missingColumns: string[] = [];
+  const missingOptionalColumns: string[] = [];
 
   for (const def of COLUMN_DEFS) {
     const aliases = def.aliases.map(normalizeHeader);
     const found = headerCells.findIndex((cell) => aliases.includes(normalizeHeader(cell)));
     if (found === -1) {
-      missingColumns.push(def.label);
+      if (def.optional) missingOptionalColumns.push(def.label);
+      else missingColumns.push(def.label);
       continue;
     }
     columnIndex[def.key] = found;
@@ -193,24 +210,28 @@ export function parseSheet(workbook: XLSX.WorkBook, sheetName: string): ParseRes
 
   const members: Member[] = [];
   let skippedRows = 0;
+  const cellAt = (row: string[], key: ColumnKey): string => {
+    const index = columnIndex[key];
+    return index === undefined ? '' : row[index] ?? '';
+  };
 
   for (let i = headerIndex + 1; i < rows.length; i += 1) {
     const row = rows[i] ?? [];
-    const name = normalizeName(row[columnIndex.name]);
+    const name = normalizeName(cellAt(row, 'name'));
     if (!name) {
       if (row.some((cell) => trimAll(cell).length > 0)) skippedRows += 1;
       continue;
     }
-    const role = trimAll(row[columnIndex.role]);
-    const phone = normalizePhone(row[columnIndex.phone]);
+    const role = trimAll(cellAt(row, 'role'));
+    const phone = normalizePhone(cellAt(row, 'phone'));
     members.push({
       id: `row-${i + 1}`,
       excelRow: i + 1,
       role,
       roles: splitRoles(role),
       name,
-      kana: normalizeKana(row[columnIndex.kana]),
-      studentId: normalizeStudentId(row[columnIndex.studentId]),
+      kana: normalizeKana(cellAt(row, 'kana')),
+      studentId: normalizeStudentId(cellAt(row, 'studentId')),
       phone: phone.value,
       phoneWarning: phone.warning,
     });
@@ -221,6 +242,7 @@ export function parseSheet(workbook: XLSX.WorkBook, sheetName: string): ParseRes
     sheetName,
     headerExcelRow: headerIndex + 1,
     columns,
+    missingOptionalColumns,
     members,
     skippedRows,
   };
@@ -282,6 +304,17 @@ export function assignByRole(members: Member[], settings: RoleSettings): Assignm
 
 export const OFFICER_SLOT_LABELS = ['①', '②', '③', '④'] as const;
 
+/** 幹部の役職がついている人を先に、足りない分は名簿の上から埋める */
+export function fillOfficerSlots(
+  assignment: Assignment,
+  leaderId: string | null,
+): (string | null)[] {
+  const pool = [...assignment.officerPool, ...assignment.generalMembers].filter(
+    (member) => member.id !== leaderId,
+  );
+  return OFFICER_SLOT_LABELS.map((_slot, index) => pool[index]?.id ?? null);
+}
+
 export type CopyItem = {
   id: string;
   /** フォームの項目名 */
@@ -312,7 +345,7 @@ export function buildCopyItems(
     {
       id: 'leader-phone',
       label: '携帯電話（ハイフンあり）',
-      source: '部長の携帯番号',
+      source: '部長の電話番号',
       value: leader?.phone ?? '',
       warning: leader?.phoneWarning,
     },
@@ -342,7 +375,7 @@ export function buildCopyItems(
       {
         id: `officer-${index}-phone`,
         label: `${slot}携帯電話番号（ハイフンあり）`,
-        source: '幹部の携帯番号',
+        source: '幹部の電話番号',
         value: officer?.phone ?? '',
         warning: officer?.phoneWarning,
       },

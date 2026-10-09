@@ -94,6 +94,13 @@ export default function ConfirmStep({
         </tbody>
       </table>
 
+      {parsed.missingOptionalColumns.length > 0 && (
+        <p className="note">
+          見つからなかった任意の列：{parsed.missingOptionalColumns.join('、')}
+          （この項目は空欄のままコピペ一覧に並びます）
+        </p>
+      )}
+
       {warnings.length > 0 && (
         <div className="alert warn">
           <strong>警告</strong>
@@ -139,7 +146,7 @@ export default function ConfirmStep({
               <td>{leader.kana}</td>
             </tr>
             <tr>
-              <th>携帯番号</th>
+              <th>電話番号</th>
               <td className={leader.phoneWarning ? 'cell-warn' : undefined}>{leader.phone}</td>
             </tr>
           </tbody>
@@ -148,7 +155,7 @@ export default function ConfirmStep({
 
       <h3>幹部①〜④</h3>
       <p className="note">
-        {settings.officerRoles.join('→')} の順で上位4人を入れています。
+        {settings.officerRoles.join('→')} の順で入れ、足りない分は名簿の上から入れています。
         選び直すと名簿ではなく画面上の割り当てだけが変わります。
       </p>
       <table className="table">
@@ -158,7 +165,7 @@ export default function ConfirmStep({
             <th>担当者</th>
             <th>フリガナ</th>
             <th>学籍番号</th>
-            <th>携帯番号</th>
+            <th>電話番号</th>
           </tr>
         </thead>
         <tbody>
@@ -203,7 +210,7 @@ export default function ConfirmStep({
 
       {phoneWarningMembers.length > 0 && (
         <>
-          <h3>携帯番号を確認したい人</h3>
+          <h3>電話番号を確認したい人</h3>
           <table className="table">
             <thead>
               <tr>

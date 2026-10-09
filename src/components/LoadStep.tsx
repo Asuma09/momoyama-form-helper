@@ -27,7 +27,8 @@ export default function LoadStep({
       <h2>1. 名簿を読み込む</h2>
       <p className="lead">
         部員名簿の Excel（.xlsx）を選ぶか、下の枠にドラッグしてください。
-        必要な列は <strong>役職・氏名・フリガナ・学籍番号・携帯番号</strong> の5つです。
+        必要な列は <strong>役職・氏名・学籍番号・電話番号（連絡先）</strong> の4つです。
+        <strong>フリガナ</strong> はあれば使い、なくても読み込めます。
         シートが複数あっても、部員一覧の見出しがあるシートを自動で探します。
       </p>
 

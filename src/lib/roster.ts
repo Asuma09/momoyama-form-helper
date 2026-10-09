@@ -249,14 +249,14 @@ export function parseSheet(workbook: XLSX.WorkBook, sheetName: string): ParseRes
 }
 
 export type RoleSettings = {
-  /** 代表者になる役職名 */
-  leaderRole: string;
+  /** 代表者になる役職名（どれか1つに一致すればよい） */
+  leaderRoles: string[];
   /** 幹部の役職名（配列の順が優先順） */
   officerRoles: string[];
 };
 
 export const DEFAULT_ROLE_SETTINGS: RoleSettings = {
-  leaderRole: '部長',
+  leaderRoles: ['部長', '代表'],
   officerRoles: ['副部長', '会計', '文サ'],
 };
 
@@ -271,7 +271,7 @@ export type Assignment = {
 
 /** 役職の値で代表者・幹部・一般部員に振り分ける（完全一致で判定） */
 export function assignByRole(members: Member[], settings: RoleSettings): Assignment {
-  const leaderRole = trimAll(settings.leaderRole);
+  const leaderRoles = settings.leaderRoles.map(trimAll).filter(Boolean);
   const officerRoles = settings.officerRoles.map(trimAll).filter(Boolean);
 
   const leaderCandidates: Member[] = [];
@@ -279,7 +279,7 @@ export function assignByRole(members: Member[], settings: RoleSettings): Assignm
   const generalMembers: Member[] = [];
 
   members.forEach((member) => {
-    if (leaderRole && member.roles.includes(leaderRole)) {
+    if (member.roles.some((role) => leaderRoles.includes(role))) {
       leaderCandidates.push(member);
       return;
     }

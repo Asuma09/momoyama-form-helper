@@ -90,13 +90,14 @@ export default function App() {
     if (!assignment || !roster) return [];
     const list: string[] = [];
     const leaderCount = assignment.leaderCandidates.length;
+    const leaderRoleText = settings.leaderRoles.join('・');
     if (leaderCount === 0) {
       list.push(
-        `役職「${settings.leaderRole}」の人が名簿にいません。代表者を一覧から選んでください。`,
+        `役職「${leaderRoleText}」の人が名簿にいません。代表者を一覧から選んでください。`,
       );
     } else if (leaderCount >= 2) {
       list.push(
-        `役職「${settings.leaderRole}」の人が${leaderCount}人います。代表者を一覧から選んでください。`,
+        `役職「${leaderRoleText}」の人が${leaderCount}人います。代表者を一覧から選んでください。`,
       );
     }
     const officerCount = assignment.officerPool.length;
@@ -125,7 +126,7 @@ export default function App() {
       list.push(`電話番号を整形できなかった人が${phoneIssues}人います。元の値のまま表示します。`);
     }
     return list;
-  }, [assignment, roster, settings.leaderRole]);
+  }, [assignment, roster, settings.leaderRoles]);
 
   const copyItems = useMemo(
     () => [...buildCopyItems(leader, officers), ...buildPlanCopyItems(plan)],

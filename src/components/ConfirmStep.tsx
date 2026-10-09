@@ -21,6 +21,13 @@ type Props = {
   onNext: () => void;
 };
 
+function splitRoles(value: string): string[] {
+  return value
+    .split(/[、,，\n]/)
+    .map((role) => role.trim())
+    .filter(Boolean);
+}
+
 function memberLabel(member: Member): string {
   const role = member.role || '役職なし';
   return `${member.name}（${role} / ${member.studentId || '学籍番号なし'}）`;
@@ -115,7 +122,7 @@ export default function ConfirmStep({
       <h3>代表者</h3>
       {needsLeaderChoice ? (
         <p className="note">
-          役職「{settings.leaderRole}」の人が{assignment.leaderCandidates.length}人でした。
+          役職「{settings.leaderRoles.join('・')}」の人が{assignment.leaderCandidates.length}人でした。
           代表者を一覧から選んでください。
         </p>
       ) : null}
@@ -237,13 +244,13 @@ export default function ConfirmStep({
       <details className="settings">
         <summary>役職名と幹部の優先順を変える</summary>
         <div className="field">
-          <label htmlFor="leader-role">代表者になる役職名</label>
+          <label htmlFor="leader-roles">代表者になる役職名（読点か改行で区切る）</label>
           <input
-            id="leader-role"
+            id="leader-roles"
             type="text"
-            value={settings.leaderRole}
+            value={settings.leaderRoles.join('、')}
             onChange={(event) =>
-              onSettingsChange({ ...settings, leaderRole: event.target.value })
+              onSettingsChange({ ...settings, leaderRoles: splitRoles(event.target.value) })
             }
           />
         </div>
@@ -254,13 +261,7 @@ export default function ConfirmStep({
             type="text"
             value={settings.officerRoles.join('、')}
             onChange={(event) =>
-              onSettingsChange({
-                ...settings,
-                officerRoles: event.target.value
-                  .split(/[、,，\n]/)
-                  .map((role) => role.trim())
-                  .filter(Boolean),
-              })
+              onSettingsChange({ ...settings, officerRoles: splitRoles(event.target.value) })
             }
           />
         </div>

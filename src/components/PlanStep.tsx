@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react';
+import AiDraft from './AiDraft';
+import { checkAiAvailability, type AiAvailability, type DraftRequest } from '../lib/ai';
 import {
   BOARD_LABELS,
   EMPTY_BOARDS,
@@ -21,7 +24,28 @@ type Props = {
   onNext: () => void;
 };
 
+/** AI の下書きが使える項目と、元になる値の作り方 */
+function draftRequestFor(key: PlanTextKey, plan: PlanInput): DraftRequest | null {
+  const products = [plan.productAll, plan.productShort].map((v) => v.trim()).find(Boolean);
+  if (!products) return null;
+  if (key === 'ingredients') return { kind: 'ingredients', products };
+  if (key === 'method') return { kind: 'method', products, ingredients: plan.ingredients };
+  return null;
+}
+
 export default function PlanStep({ plan, onChange, onBack, onNext }: Props) {
+  const [aiAvailability, setAiAvailability] = useState<AiAvailability>('unavailable');
+
+  useEffect(() => {
+    let active = true;
+    checkAiAvailability().then((result) => {
+      if (active) setAiAvailability(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   function patch(changes: Partial<PlanInput>) {
     onChange({ ...plan, ...changes });
   }
@@ -128,21 +152,44 @@ export default function PlanStep({ plan, onChange, onBack, onNext }: Props) {
         選択肢はフォームの文言どおりです。
       </p>
 
+      {aiAvailability !== 'unavailable' && (
+        <p className="note ai-notice">
+          「全ての材料」と「調理方法」は、Chrome 内蔵の AI で下書きを作れます。
+          AI はこの端末の中だけで動き、渡すのは販売商品名と材料だけです（名簿は渡しません）。
+          {aiAvailability !== 'available' &&
+            '初めて使うときだけ、Chrome が AI モデル（数GB）をダウンロードします。'}
+        </p>
+      )}
+
       {needsRegulatorCheck(plan) && (
         <p className="alert warn">
           プロパンガスを希望して調整機を希望しない設定です。過去に購入した調整機が保管されているか確認してください。
         </p>
       )}
 
-      {PLAN_FIELDS.map((field) => (
-        <div className="field plan-field" key={planFieldId(field)}>
-          <label htmlFor={field.kind === 'choice' || field.kind === 'boards' ? undefined : planFieldId(field)}>
-            {field.label}
-          </label>
-          {field.note && <p className="field-note">{field.note}</p>}
-          {renderField(field)}
-        </div>
-      ))}
+      {PLAN_FIELDS.map((field) => {
+        const aiKey =
+          field.kind === 'multiline' && (field.key === 'ingredients' || field.key === 'method')
+            ? field.key
+            : null;
+        return (
+          <div className="field plan-field" key={planFieldId(field)}>
+            <label htmlFor={field.kind === 'choice' || field.kind === 'boards' ? undefined : planFieldId(field)}>
+              {field.label}
+            </label>
+            {field.note && <p className="field-note">{field.note}</p>}
+            {renderField(field)}
+            {aiKey && (
+              <AiDraft
+                availability={aiAvailability}
+                request={draftRequestFor(aiKey, plan)}
+                hint="先に「販売商品名」を入力してください"
+                onInsert={(text) => setText(aiKey, text)}
+              />
+            )}
+          </div>
+        );
+      })}
 
       {unfilled.length > 0 && (
         <p className="note">

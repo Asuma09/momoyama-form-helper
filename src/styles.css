@@ -444,6 +444,69 @@ button.secondary {
   color: #3c7a46;
 }
 
+.ai-notice {
+  padding: 10px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+}
+
+.ai-draft {
+  margin-top: 8px;
+}
+
+.ai-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ai-button {
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.ai-button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.ai-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ai-result {
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 8px;
+}
+
+.ai-result .ai-hint {
+  display: block;
+  margin: 0 0 6px;
+}
+
+.ai-result textarea {
+  width: 100%;
+  max-width: 640px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.ai-result .ai-row {
+  margin-top: 8px;
+}
+
 .preset-row {
   display: flex;
   gap: 10px;

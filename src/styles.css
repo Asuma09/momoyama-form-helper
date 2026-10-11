@@ -578,12 +578,19 @@ button.secondary {
 .layout-preview canvas {
   display: block;
   width: 100%;
-  max-width: 540px;
+  max-width: 720px;
   height: auto;
   margin: 0 auto;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 4px;
+  cursor: grab;
+  /* スマホで図をなぞったときに画面が動かないようにする */
+  touch-action: none;
+}
+
+.layout-preview canvas.dragging {
+  cursor: grabbing;
 }
 
 .app-footer {

@@ -40,9 +40,18 @@ const MARGIN = 15;
 /** 寸法が想定値であることを図と画面の両方に出す */
 export const SIZE_NOTE = `長机 ${SIZES.table.width}×${SIZES.table.depth}cm / プロパンガス 20kgボンベ / 石膏ボードの幅 小${SIZES.boardWidth.small}・中${SIZES.boardWidth.medium}・大${SIZES.boardWidth.large}cm`;
 
+export type Point = { x: number; y: number };
+
 export type BoardAlign = 'left' | 'right';
-export type LayoutOptions = { boardAlign: BoardAlign };
-export const DEFAULT_LAYOUT_OPTIONS: LayoutOptions = { boardAlign: 'left' };
+export type LayoutOptions = {
+  boardAlign: BoardAlign;
+  /** ドラッグで動かしたものだけ、図形の id をキーに置き場所を覚える */
+  moved: Record<string, Point>;
+};
+export const DEFAULT_LAYOUT_OPTIONS: LayoutOptions = { boardAlign: 'left', moved: {} };
+
+/** ドラッグ中に位置を丸める刻み（cm） */
+export const SNAP_CM = 5;
 
 export type ShapeTone = 'table' | 'board' | 'gas' | 'power' | 'fire' | 'chair';
 
@@ -207,7 +216,46 @@ export function buildLayout(plan: PlanInput, options: LayoutOptions): Layout {
     notes.push('企画情報で物品を選ぶと、ここに配置が描かれます。');
   }
 
-  return { shapes, warnings, notes, boardTotal };
+  // ドラッグで動かしたものは、自動で決めた位置より優先する
+  const placed = shapes.map((shape) => {
+    const moved = options.moved[shape.id];
+    return moved ? { ...shape, ...clampToTent(moved, shape) } : shape;
+  });
+
+  return { shapes: placed, warnings, notes, boardTotal };
+}
+
+/** テントからはみ出さない位置に丸める */
+export function clampToTent(point: Point, size: { width: number; height: number }): Point {
+  return {
+    x: Math.min(Math.max(point.x, 0), Math.max(TENT.width - size.width, 0)),
+    y: Math.min(Math.max(point.y, 0), Math.max(TENT.depth - size.height, 0)),
+  };
+}
+
+export function snapToGrid(value: number): number {
+  return Math.round(value / SNAP_CM) * SNAP_CM;
+}
+
+/** 重なっている場合は、後に描いたもの（上にあるもの）を掴む */
+export function findShapeAt(shapes: Shape[], x: number, y: number): Shape | null {
+  for (let index = shapes.length - 1; index >= 0; index -= 1) {
+    const shape = shapes[index];
+    if (shape.kind === 'circle') {
+      const radius = shape.width / 2;
+      const dx = x - (shape.x + radius);
+      const dy = y - (shape.y + radius);
+      if (dx * dx + dy * dy <= radius * radius) return shape;
+    } else if (
+      x >= shape.x &&
+      x <= shape.x + shape.width &&
+      y >= shape.y &&
+      y <= shape.y + shape.height
+    ) {
+      return shape;
+    }
+  }
+  return null;
 }
 
 /* ---------------- ここから描画 ---------------- */
@@ -225,6 +273,8 @@ export const CANVAS_SIZE = {
 
 const INK = '#241f1a';
 const MUTED = '#6b635a';
+/** 掴んでいる図形の枠。styles.css の --accent と同じ色 */
+const ACCENT = '#b4442f';
 const FONT = "'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', Meiryo, sans-serif";
 
 const TONE_FILL: Record<ShapeTone, string> = {
@@ -240,15 +290,25 @@ function label(size: number, bold = false): string {
   return `${bold ? 'bold ' : ''}${size}px ${FONT}`;
 }
 
-function drawShape(ctx: CanvasRenderingContext2D, shape: Shape): void {
+/** 画面の座標を、テント内の座標（cm）に直す。canvas は縮小表示されている */
+export function toTentPoint(canvas: HTMLCanvasElement, clientX: number, clientY: number): Point {
+  const rect = canvas.getBoundingClientRect();
+  const scale = rect.width > 0 ? canvas.width / rect.width : 1;
+  return {
+    x: ((clientX - rect.left) * scale - PAD) / PX_PER_CM,
+    y: ((clientY - rect.top) * scale - HEADER) / PX_PER_CM,
+  };
+}
+
+function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, active: boolean): void {
   const x = PAD + shape.x * PX_PER_CM;
   const y = HEADER + shape.y * PX_PER_CM;
   const w = shape.width * PX_PER_CM;
   const h = shape.height * PX_PER_CM;
 
   ctx.fillStyle = TONE_FILL[shape.tone];
-  ctx.strokeStyle = INK;
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = active ? ACCENT : INK;
+  ctx.lineWidth = active ? 3 : 1.5;
   ctx.beginPath();
   if (shape.kind === 'circle') {
     ctx.arc(x + w / 2, y + h / 2, w / 2, 0, Math.PI * 2);
@@ -286,6 +346,7 @@ export function drawLayout(
   canvas: HTMLCanvasElement,
   layout: Layout,
   plan: PlanInput,
+  activeId?: string | null,
 ): void {
   canvas.width = CANVAS_SIZE.width;
   canvas.height = CANVAS_SIZE.height;
@@ -333,7 +394,7 @@ export function drawLayout(
   ctx.lineWidth = 2.5;
   ctx.strokeRect(left, top, width, depth);
 
-  layout.shapes.forEach((shape) => drawShape(ctx, shape));
+  layout.shapes.forEach((shape) => drawShape(ctx, shape, shape.id === activeId));
 
   // 寸法とお客様の向き（フォームの例と同じ位置に出す）
   ctx.font = label(12);

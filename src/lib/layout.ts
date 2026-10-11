@@ -115,10 +115,13 @@ export function buildLayout(plan: PlanInput, options: LayoutOptions): Layout {
   );
   const boardTotal = boards.reduce((sum, size) => sum + SIZES.boardWidth[size], 0);
   if (boards.length > 0) {
+    // 机に収まらない枚数のときは、はみ出さないように描く幅だけ縮める。
+    // 本当の幅は図の中の文字と警告で伝えるので、縮めるのは見た目だけ。
+    const shrink = boardTotal > SIZES.table.width ? SIZES.table.width / boardTotal : 1;
+    const drawTotal = boardTotal * shrink;
     const aligned =
-      options.boardAlign === 'left' ? TABLE_X : TABLE_X + SIZES.table.width - boardTotal;
-    // 机に収まらない枚数でもテントの外には描かない（収まらないことは警告で伝える）
-    let cursor = Math.min(Math.max(aligned, 0), Math.max(TENT.width - boardTotal, 0));
+      options.boardAlign === 'left' ? TABLE_X : TABLE_X + SIZES.table.width - drawTotal;
+    let cursor = aligned;
     boards.forEach((size, index) => {
       const width = SIZES.boardWidth[size];
       shapes.push({
@@ -128,15 +131,18 @@ export function buildLayout(plan: PlanInput, options: LayoutOptions): Layout {
         sub: `幅${width}cm`,
         x: cursor,
         y: TABLE_Y,
-        width,
+        width: width * shrink,
         height: SIZES.boardDepth,
         tone: 'board',
       });
-      cursor += width;
+      cursor += width * shrink;
     });
     if (boardTotal > SIZES.table.width) {
       warnings.push(
         `石膏ボードの幅の合計が${boardTotal}cmで、長机の${SIZES.table.width}cmを超えます。枚数を見直すか、机に収まるか確認してください。`,
+      );
+      notes.push(
+        `石膏ボードは机に収まらないので、図では机の幅（${SIZES.table.width}cm）に合わせて縮めて描いています。図の中の幅の数値は実際の値です。`,
       );
     }
     if (!hasTable) {

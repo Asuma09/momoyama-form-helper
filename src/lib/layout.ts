@@ -16,8 +16,11 @@ import {
   type PlanInput,
 } from './plan';
 
-/** テントの内側の寸法（cm） */
-export const TENT = { width: 300, depth: 300 };
+/**
+ * テントの内側の寸法（cm）。フォームの配置見取り図（例）の 4.0m × 2.8m に合わせている。
+ * 手前（下）が「お客様が並ぶ側」。
+ */
+export const TENT = { width: 400, depth: 280 };
 
 /** 什器の寸法（cm）。石膏ボードは幅だけ変え、奥行きは長机と同じとして描く。 */
 export const SIZES = {
@@ -135,13 +138,14 @@ export function buildLayout(plan: PlanInput, options: LayoutOptions): Layout {
   }
 
   if (plan.propane === WANT) {
+    // フォームの例に合わせて手前の左
     shapes.push({
       id: 'propane',
       kind: 'circle',
       label: 'プロパンガス',
       sub: plan.regulator === WANT ? '20kg・調整機つき' : '20kg',
       x: MARGIN,
-      y: MARGIN,
+      y: TENT.depth - MARGIN - SIZES.propane,
       width: SIZES.propane,
       height: SIZES.propane,
       tone: 'gas',
@@ -150,6 +154,7 @@ export function buildLayout(plan: PlanInput, options: LayoutOptions): Layout {
     notes.push('調整機だけを希望しているため、図にはプロパンガスを描いていません。');
   }
 
+  // フォームの例に合わせて奥の右
   const generators = generatorCount(plan.generator);
   for (let index = 0; index < generators; index += 1) {
     shapes.push({
@@ -183,12 +188,13 @@ export function buildLayout(plan: PlanInput, options: LayoutOptions): Layout {
   }
 
   if (plan.extinguisher === EXTINGUISHER_AGREE) {
+    // フォームの例に合わせて奥の左
     shapes.push({
       id: 'extinguisher',
-      kind: 'circle',
+      kind: 'rect',
       label: '消火器',
       x: MARGIN,
-      y: TENT.depth - MARGIN - SIZES.extinguisher,
+      y: MARGIN,
       width: SIZES.extinguisher,
       height: SIZES.extinguisher,
       tone: 'fire',
@@ -209,7 +215,7 @@ export function buildLayout(plan: PlanInput, options: LayoutOptions): Layout {
 const PX_PER_CM = 3;
 const PAD = 44;
 const HEADER = 84;
-const FOOTER = 72;
+const FOOTER = 96;
 const GRID_CM = 50;
 
 export const CANVAS_SIZE = {
@@ -298,11 +304,8 @@ export function drawLayout(
   ctx.font = label(13);
   ctx.fillStyle = MUTED;
   const title = plan.productShort.trim();
-  ctx.fillText(
-    title ? `企画名：${title}　／　テント 3m × 3m` : 'テント 3m × 3m',
-    PAD,
-    58,
-  );
+  const tentText = `テント ${TENT.width / 100}m × ${TENT.depth / 100}m`;
+  ctx.fillText(title ? `企画名：${title}　／　${tentText}` : tentText, PAD, 58);
 
   const left = PAD;
   const top = HEADER;
@@ -332,27 +335,27 @@ export function drawLayout(
 
   layout.shapes.forEach((shape) => drawShape(ctx, shape));
 
-  // 通路側の向きと寸法
+  // 寸法とお客様の向き（フォームの例と同じ位置に出す）
   ctx.font = label(12);
-  ctx.fillStyle = MUTED;
+  ctx.fillStyle = INK;
   ctx.textAlign = 'center';
-  ctx.fillText('↓ 通路側（お客さん）', left + width / 2, top + depth + 22);
-  ctx.fillText(`${TENT.width}cm`, left + width / 2, top - 8);
+  ctx.fillText(`${TENT.width / 100}m`, left + width / 2, top + depth + 20);
+  ctx.fillText('↓ お客様が並ぶ側', left + width / 2, top + depth + 38);
   ctx.save();
-  ctx.translate(left - 12, top + depth / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillText(`${TENT.depth}cm`, 0, 0);
+  ctx.translate(left + width + 16, top + depth / 2);
+  ctx.rotate(Math.PI / 2);
+  ctx.fillText(`${TENT.depth / 100}m`, 0, 0);
   ctx.restore();
 
   // 注記
   ctx.textAlign = 'left';
   ctx.font = label(11);
   ctx.fillStyle = MUTED;
-  ctx.fillText(`方眼は${GRID_CM}cm。寸法の想定：${SIZE_NOTE}`, PAD, top + depth + 48);
+  ctx.fillText(`方眼は${GRID_CM}cm。寸法の想定：${SIZE_NOTE}`, PAD, top + depth + 60);
   ctx.fillText(
     '企画情報で選んだ物品から自動で配置しています。実物と違う場合は図を直してください。',
     PAD,
-    top + depth + 64,
+    top + depth + 76,
   );
 }
 

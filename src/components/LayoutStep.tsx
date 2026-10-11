@@ -35,8 +35,8 @@ export default function LayoutStep({ plan, options, onOptionsChange, onBack }: P
     <section className="card">
       <h2>6. 配置見取り図を書き出す</h2>
       <p className="lead">
-        企画情報で選んだ物品から、テント内の配置を自動で描きます。位置は決まった形で入れるので、
-        動かすのではなく、画像を書き出してから必要なら手で直してください。
+        企画情報で選んだ物品から、テント内の配置を自動で描きます。配置はフォームの例と同じ形に
+        決まっているので、動かすのではなく、画像を書き出してから必要なら手で直してください。
       </p>
 
       <div className="field">
@@ -85,9 +85,12 @@ export default function LayoutStep({ plan, options, onOptionsChange, onBack }: P
       ))}
 
       <p className="note">
-        寸法の想定：{SIZE_NOTE}。消火器・発電機・プロパンガスの位置とこれらの寸法は、
-        フォームの配置見取り図（例）と見比べて確認してください。違っていれば
-        <code>src/lib/layout.ts</code> の数値を直します。
+        テントの大きさ（4m × 2.8m）と、消火器・発電機・プロパンガスの位置は、
+        フォームの配置見取り図（例）に合わせています。例の図が変わった年は
+        <code>src/lib/layout.ts</code> の数値を直してください。
+      </p>
+      <p className="note">
+        寸法の想定：{SIZE_NOTE}。この数値は実物を確認できていないので、違っていれば同じファイルで直せます。
       </p>
 
       {fileSize !== null && (

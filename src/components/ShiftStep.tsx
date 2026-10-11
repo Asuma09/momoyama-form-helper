@@ -17,6 +17,7 @@ type Props = {
   onShuffle: () => void;
   onResetOrder: () => void;
   onBack: () => void;
+  onNext: () => void;
 };
 
 type LinesFieldProps = {
@@ -80,6 +81,7 @@ export default function ShiftStep({
   onShuffle,
   onResetOrder,
   onBack,
+  onNext,
 }: Props) {
   const table = useMemo(() => buildShiftTable(order, settings), [order, settings]);
   const example = useMemo(() => exampleColumn(settings), [settings]);
@@ -224,6 +226,9 @@ export default function ShiftStep({
           disabled={order.length === 0}
         >
           Excel で書き出す
+        </button>
+        <button type="button" className="secondary" onClick={onNext}>
+          見取り図へ進む
         </button>
       </div>
     </section>

@@ -5,7 +5,9 @@ import ConfirmStep from './components/ConfirmStep';
 import PlanStep from './components/PlanStep';
 import CopyStep from './components/CopyStep';
 import ShiftStep from './components/ShiftStep';
+import LayoutStep from './components/LayoutStep';
 import { EMPTY_PLAN, buildPlanCopyItems, type PlanInput } from './lib/plan';
+import { DEFAULT_LAYOUT_OPTIONS, type LayoutOptions } from './lib/layout';
 import { DEFAULT_SHIFT_SETTINGS, shuffle, type ShiftSettings } from './lib/shift';
 import {
   DEFAULT_ROLE_SETTINGS,
@@ -19,7 +21,7 @@ import {
   type RoleSettings,
 } from './lib/roster';
 
-type Step = 'load' | 'confirm' | 'plan' | 'copy' | 'shift';
+type Step = 'load' | 'confirm' | 'plan' | 'copy' | 'shift' | 'layout';
 
 const STEP_LABELS: Record<Step, string> = {
   load: '読み込み',
@@ -27,6 +29,7 @@ const STEP_LABELS: Record<Step, string> = {
   plan: '企画情報の入力',
   copy: 'コピペ一覧',
   shift: 'シフト表',
+  layout: '見取り図',
 };
 
 const EMPTY_SLOTS: (string | null)[] = OFFICER_SLOT_LABELS.map(() => null);
@@ -43,6 +46,7 @@ export default function App() {
   const [officerIds, setOfficerIds] = useState<(string | null)[]>(EMPTY_SLOTS);
   const [plan, setPlan] = useState<PlanInput>(EMPTY_PLAN);
   const [shiftSettings, setShiftSettings] = useState<ShiftSettings>(DEFAULT_SHIFT_SETTINGS);
+  const [layoutOptions, setLayoutOptions] = useState<LayoutOptions>(DEFAULT_LAYOUT_OPTIONS);
   const [orderIds, setOrderIds] = useState<string[]>([]);
 
   const parsed = useMemo(() => {
@@ -267,6 +271,16 @@ export default function App() {
             onShuffle={() => setOrderIds((prev) => shuffle(prev))}
             onResetOrder={() => setOrderIds(roster.members.map((member) => member.id))}
             onBack={() => setStep('copy')}
+            onNext={() => setStep('layout')}
+          />
+        )}
+
+        {step === 'layout' && roster && (
+          <LayoutStep
+            plan={plan}
+            options={layoutOptions}
+            onOptionsChange={setLayoutOptions}
+            onBack={() => setStep('shift')}
           />
         )}
       </main>

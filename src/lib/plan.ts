@@ -145,7 +145,7 @@ export const EMPTY_PLAN: PlanInput = {
 
 export const BOARD_LABELS: Record<BoardSize, string> = { small: '小', medium: '中', large: '大' };
 
-function boardCount(value: string): number {
+export function boardCount(value: string): number {
   const digits = value.replace(/\D/g, '');
   return digits ? Number(digits) : 0;
 }
